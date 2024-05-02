@@ -24,6 +24,8 @@ CREATE TABLE Trabajadores (
     fechaNacimiento DATE,
     fechaAlta DATE,
     puesto VARCHAR(50),
+    salario FLOAT,
+    -->bonus FLOAT,
     idLaboratorio INT NOT NULL REFERENCES Laboratorio(id)
 );
 
