@@ -17,13 +17,13 @@ CREATE TABLE Laboratorio (
 
 CREATE TABLE Trabajadores (
     id INTEGER PRIMARY KEY,
-    DNI VARCHAR(9) UNIQUE,
-    nombre VARCHAR(50),
-    apellido1 VARCHAR(50),
-    apellido2 VARCHAR(50),
-    fechaNacimiento DATE,
-    fechaAlta DATE,
-    puesto VARCHAR(50),
+    dni VARCHAR(9) UNIQUE,
+    nombre VARCHAR(30),
+    apellido1 VARCHAR(30),
+    apellido2 VARCHAR(30),
+    fechaNacimiento VARCHAR(30),
+    fechaAlta VARCHAR(30),
+    puesto VARCHAR(30),
     salario FLOAT,
     -->bonus FLOAT,
     idLaboratorio INT NOT NULL REFERENCES Laboratorio(id)
