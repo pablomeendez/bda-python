@@ -38,14 +38,16 @@ def add_worker(conn):
     puesto = None if puesto == '' else puesto
     salario = input("Salario: ")
     salario = None if salario == '' else float(salario)
+    bonus = input("Bonus: ")
+    bonus = None if bonus == '' else float(bonus)
     laboratorio = input("Laboratorio: ")
     laboratorio = None if laboratorio == '' else int(laboratorio)
 
     sql_query = """insert into Trabajadores(id, dni, nombre, apellido1, apellido2, fechaNacimiento, fechaAlta, puesto, salario, idLaboratorio) 
-                   values(%(id)s, %(dni)s, %(n)s, %(a1)s, %(a2)s, %(fn)s, %(fa)s, %(p)s, %(s)s, %(idl)s)"""
+                   values(%(id)s, %(dni)s, %(n)s, %(a1)s, %(a2)s, %(fn)s, %(fa)s, %(p)s, %(s)s, %(b)s, %(idl)s)"""
     with conn.cursor() as curr:
         try: 
-            curr.execute(sql_query, {'id': id, 'dni': dni, 'n': nombre, 'a1': apellido1, 'a2': apellido2, 'fn': fechaNacimiento, 'fa': fechaAlta, 'p': puesto, 's': salario, 'idl': laboratorio})
+            curr.execute(sql_query, {'id': id, 'dni': dni, 'n': nombre, 'a1': apellido1, 'a2': apellido2, 'fn': fechaNacimiento, 'fa': fechaAlta, 'p': puesto, 's': salario, 'b': bonus, 'idl': laboratorio})
             conn.commit()
             print("Trabajador añadido")
         except psycopg2.Error as e:
@@ -81,6 +83,7 @@ def add_worker(conn):
 # BAJA
 def delete_worker(conn):
     id = input("Id del trabajador: ")
+    id = None if id == '' else int(id)
     sql_query = """delete from Trabajadores where id = %s"""
     with conn.cursor() as curr:
         try:
@@ -151,12 +154,36 @@ def show_labs_by_location(conn):
 
 
 ## ------------------------------------------------------------
+# SELECT
+def give_bonus_to_workers(conn):
+    trabajador1 = input("Id Trabajador a añadir bonus: ")
+    trabajador1 = None if trabajador1 == '' else int(trabajador1)
+    trabajador2 = input("Id Trabajador a quitar bonus: ")
+    trabajador2 = None if trabajador2 == '' else int(trabajador2)
+    bonus = input("Bonus: ")
+    bonus = None if bonus == '' else float(bonus)
+    sql_query = """update Trabajadores set bonus = bonus + %s where id in %s; update Trabajadores set bonus = bonus - %s where id in %s"""
+    with conn.cursor() as curr:
+        try:
+            curr.execute(sql_query, (bonus, (trabajador1,), bonus, (trabajador2,)))
+            conn.commit()
+            print("Bonus actualizado")
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                print("O bonus resultante debe ser positivo.")
+            else:
+                print(f"Erro: {e.pgcode} - {e.pgerror}")
+            conn.rollback()
+
+
+## ------------------------------------------------------------
 def menu(conn):
     MENU_TEXT = """
     1 - Añadir trabajador
     2 - Eliminar trabajador
     3 - Actualizar salario
     4 - Listar trabajadores por laboratorio
+    5 - Listar laboratorios por localización
     q - Salir
     """
 
