@@ -184,6 +184,7 @@ def menu(conn):
     3 - Actualizar salario
     4 - Listar trabajadores por laboratorio
     5 - Listar laboratorios por localización
+    6 - Transferir bonus de empleado eficiente
     q - Salir
     """
 
@@ -200,6 +201,10 @@ def menu(conn):
             update_salary(conn)
         elif opcion == '4':
             show_workers_by_lab(conn)
+        elif opcion == '5':
+            show_labs_by_location(conn)
+        elif opcion == '6':
+            give_bonus_to_workers(conn)
         else:
             print("Opción incorrecta")
 
