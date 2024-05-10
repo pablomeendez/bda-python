@@ -49,7 +49,7 @@ def add_worker(conn):
     laboratorio = input("Laboratorio: ")
     laboratorio = None if laboratorio == '' else int(laboratorio)
 
-    sql_query = """insert into Trabajadores(id, dni, nombre, apellido1, apellido2, fechaNacimiento, fechaAlta, puesto, salario, idLaboratorio) 
+    sql_query = """insert into Trabajadores(id, dni, nombre, apellido1, apellido2, fechaNacimiento, fechaAlta, puesto, salario, bonus, idLaboratorio) 
                    values(%(id)s, %(dni)s, %(n)s, %(a1)s, %(a2)s, %(fn)s, %(fa)s, %(p)s, %(s)s, %(b)s, %(idl)s)"""
     with conn.cursor() as curr:
         try: 
@@ -108,6 +108,7 @@ def delete_worker(conn):
 # MODIFICACION
 def update_salary(conn):
     id = input("Id del trabajador: ")
+    id = None if id == '' else int(id)
     porcentaje = input("Porcentaje cambio: ")
     porcentaje = None if porcentaje == '' else float(porcentaje)
     sql_query = """update Trabajadores set salario = salario * (1 + %s/100) where id = %s"""
@@ -124,6 +125,8 @@ def update_salary(conn):
                 print("No se puede modificar el salario porque ya ha sido modificado.")
             elif e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
                 print("El salario resultante debe ser positivo.")
+            elif e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                print("No puede haber nulos")
             else:
                 print(f"Erro: {e.pgcode} - {e.pgerror}")
             conn.rollback()
@@ -141,8 +144,8 @@ def show_workers_by_lab(conn):
             conn.commit()
             rows = curr.fetchall()
             for row in rows:
-                print(f"Id: {row['id']}, Nombre: {row['nombre']}, Apellido1: {row['apellido1']}, Apellido2: {row['apellido2']}, Puesto: {row['puesto']}, Salario: {row['salario']}")
-            print(f"{curr_apellido} trabajadores")
+                print(f"Id: {row['id']}, Nombre: {row['nombre']}, Apellido1: {row['apellido1']}, Apellido2: {row['apellido2']}, Puesto: {row['puesto']}, Salario: {row['salario']}, Bonus: {row['bonus']}")
+            print(f"{curr.rowcount} trabajadores")
         except psycopg2.Error as e:
             print(f"Erro: {e.pgcode} - {e.pgerror}")
             conn.rollback()
@@ -151,18 +154,23 @@ def show_workers_by_lab(conn):
 # UPDATE
 def change_capacity(conn):
     laboratorio = input("Id Laboratorio: ")
-    laboratorio = None if laboratorio == None else int(laboratorio)
+    laboratorio = None if laboratorio == '' else int(laboratorio)
     capacidad = input("Nueva Capacidad: ")
-    capacidad = None if capacidad == None else int(capacidad)
-    sql_query = """update Laboratorio set capacidad = %s where laboratorio = %s"""
+    capacidad = None if capacidad == '' else int(capacidad)
+    sql_query = """update Laboratorio set capacidad = %s where id = %s"""
     with conn.cursor() as curr:
         try:
             curr.execute(sql_query, (capacidad, laboratorio))
-            conn.commit()
-            print("Capacidad actualizada")
+            if curr.rowcount == 0:
+                print("Laboratorio no encontrado")
+            else:
+                conn.commit()
+                print("Capacidad actualizado")  
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
                 print("La capacidad debe ser positiva.")
+            elif e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                print("No puede haber nulos")
             elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
                 print("No se puede modificar la capacidad porque ya ha sido modificada.")
             else:
@@ -173,15 +181,16 @@ def change_capacity(conn):
 ## ------------------------------------------------------------
 # SELECT
 def show_labs_by_location(conn):
-    localizacion = input("Localización: ")
-    sql_query = """select * from Laboratorios where localizacion = %s"""
+    localizacion = input("Id Localización: ")
+    localizacion = None if localizacion == '' else int(localizacion)
+    sql_query = """select * from Laboratorio where id = %s"""
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as curr:
         try:
             curr.execute(sql_query, (localizacion,))
             conn.commit()
             rows = curr.fetchall()
             for row in rows:
-                print(f"{row['id']} - {row['nombre']} - {row['especialidad']} - {row['localizacion']}")
+                print(f"Id: {row['id']}, Nombre: {row['nombre']}, Especialidad: {row['especialidad']}, Telefono: {row['telefono']}, Capacidad: {row['capacidad']}")
         except psycopg2.Error as e:
             print(f"Erro: {e.pgcode} - {e.pgerror}")
             conn.rollback()
@@ -197,7 +206,7 @@ def give_bonus_to_workers(conn):
     bonus = input("Bonus: ")
     bonus = None if bonus == '' else float(bonus)
     sql_query = """update Trabajadores set bonus = bonus + %s where id in %s; 
-                    update Trabajadores set bonus = bonus - %s where id in %s"""
+                   update Trabajadores set bonus = bonus - %s where id in %s"""
     with conn.cursor() as curr:
         try:
             curr.execute(sql_query, (bonus, (trabajador1,), bonus, (trabajador2,)))
@@ -205,9 +214,11 @@ def give_bonus_to_workers(conn):
             print("Bonus actualizado")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
-                print("O bonus resultante debe ser positivo.")
+                print("El bonus resultante no puede ser negativo.")
+            elif e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                print("No puede haber nulos")
             elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
-                print("Non se pode modificar o bonus porque outro usuario o modificou.")
+                print("No se puede modificar el bonus porque otro usuario ya lo ha modificado.")
             else:
                 print(f"Erro: {e.pgcode} - {e.pgerror}")
             conn.rollback()
@@ -222,6 +233,7 @@ def menu(conn):
     4 - Listar trabajadores por laboratorio
     5 - Listar laboratorios por localización
     6 - Transferir bonus de empleado eficiente
+    7 - Cambiar capacidad de laboratorio
     q - Salir
     """
 
@@ -242,6 +254,8 @@ def menu(conn):
             show_labs_by_location(conn)
         elif opcion == '6':
             give_bonus_to_workers(conn)
+        elif opcion == '7':
+            change_capacity(conn)
         else:
             print("Opción incorrecta")
 
