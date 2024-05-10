@@ -21,13 +21,12 @@ CREATE TABLE Trabajadores (
     nombre VARCHAR(30) NOT NULL,
     apellido1 VARCHAR(30) NOT NULL,
     apellido2 VARCHAR(30),
-    fechaNacimiento DATE NOT NULL,
+    fechaNacimiento  NOT NULL,
     fechaAlta DATE NOT NULL,
     puesto VARCHAR(30) NOT NULL,
     salario FLOAT NOT NULL CONSTRAINT salario_mayor_cero CHECK (salario > 0),
-    bonus FLOAT,
+    bonus FLOAT NOT NULL CONSTRAINT bonus_mayor_cero CHECK (bonus > 0),
     idLaboratorio INT NOT NULL REFERENCES Laboratorio(id)
 );
-
 
 
