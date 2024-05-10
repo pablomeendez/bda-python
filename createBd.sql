@@ -17,15 +17,17 @@ CREATE TABLE Laboratorio (
 
 CREATE TABLE Trabajadores (
     id INTEGER PRIMARY KEY,
-    dni VARCHAR(9) UNIQUE,
-    nombre VARCHAR(30),
-    apellido1 VARCHAR(30),
+    dni VARCHAR(9) UNIQUE NOT NULL,
+    nombre VARCHAR(30) NOT NULL,
+    apellido1 VARCHAR(30) NOT NULL,
     apellido2 VARCHAR(30),
-    fechaNacimiento VARCHAR(30),
-    fechaAlta VARCHAR(30),
-    puesto VARCHAR(30),
-    salario FLOAT,
-    -->bonus FLOAT,
+    fechaNacimiento DATE NOT NULL,
+    fechaAlta DATE NOT NULL,
+    puesto VARCHAR(30) NOT NULL,
+    salario FLOAT NOT NULL CONSTRAINT salario_mayor_cero CHECK (salario > 0),
+    bonus FLOAT,
     idLaboratorio INT NOT NULL REFERENCES Laboratorio(id)
 );
+
+
 
