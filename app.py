@@ -5,9 +5,15 @@ import psycopg2.errorcodes
 
 ## ------------------------------------------------------------
 def connect_db():
-    conn = psycopg2.connect("")
-    conn.autocommit = False
-    return conn
+    try:   
+        conn = psycopg2.connect("")
+        conn.autocommit = False
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
+        print("Nivel de aislamiento: SERIALIZABLE")
+        return conn
+    except Exception as e:
+        print(f"Erro de conexión: {e}")
+        sys.exit(1)
 
 
 ## ------------------------------------------------------------
@@ -114,7 +120,12 @@ def update_salary(conn):
                 conn.commit()
                 print("Salario actualizado")
         except psycopg2.Error as e:
-            print(f"Erro: {e.pgcode} - {e.pgerror}")
+            if e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
+                print("No se puede modificar el salario porque ya ha sido modificado.")
+            elif e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                print("El salario resultante debe ser positivo.")
+            else:
+                print(f"Erro: {e.pgcode} - {e.pgerror}")
             conn.rollback()
 
 
@@ -131,8 +142,31 @@ def show_workers_by_lab(conn):
             rows = curr.fetchall()
             for row in rows:
                 print(f"Id: {row['id']}, Nombre: {row['nombre']}, Apellido1: {row['apellido1']}, Apellido2: {row['apellido2']}, Puesto: {row['puesto']}, Salario: {row['salario']}")
+            print(f"{curr_apellido} trabajadores")
         except psycopg2.Error as e:
             print(f"Erro: {e.pgcode} - {e.pgerror}")
+            conn.rollback()
+
+## ------------------------------------------------------------
+# UPDATE
+def change_capacity(conn):
+    laboratorio = input("Id Laboratorio: ")
+    laboratorio = None if laboratorio == None else int(laboratorio)
+    capacidad = input("Nueva Capacidad: ")
+    capacidad = None if capacidad == None else int(capacidad)
+    sql_query = """update Laboratorio set capacidad = %s where laboratorio = %s"""
+    with conn.cursor() as curr:
+        try:
+            curr.execute(sql_query, (capacidad, laboratorio))
+            conn.commit()
+            print("Capacidad actualizada")
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                print("La capacidad debe ser positiva.")
+            elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
+                print("No se puede modificar la capacidad porque ya ha sido modificada.")
+            else:
+                print(f"Erro: {e.pgcode} - {e.pgerror}")
             conn.rollback()
 
 
@@ -154,7 +188,7 @@ def show_labs_by_location(conn):
 
 
 ## ------------------------------------------------------------
-# SELECT
+# 2 UPDATES
 def give_bonus_to_workers(conn):
     trabajador1 = input("Id Trabajador a añadir bonus: ")
     trabajador1 = None if trabajador1 == '' else int(trabajador1)
@@ -162,7 +196,8 @@ def give_bonus_to_workers(conn):
     trabajador2 = None if trabajador2 == '' else int(trabajador2)
     bonus = input("Bonus: ")
     bonus = None if bonus == '' else float(bonus)
-    sql_query = """update Trabajadores set bonus = bonus + %s where id in %s; update Trabajadores set bonus = bonus - %s where id in %s"""
+    sql_query = """update Trabajadores set bonus = bonus + %s where id in %s; 
+                    update Trabajadores set bonus = bonus - %s where id in %s"""
     with conn.cursor() as curr:
         try:
             curr.execute(sql_query, (bonus, (trabajador1,), bonus, (trabajador2,)))
@@ -171,6 +206,8 @@ def give_bonus_to_workers(conn):
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
                 print("O bonus resultante debe ser positivo.")
+            elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
+                print("Non se pode modificar o bonus porque outro usuario o modificou.")
             else:
                 print(f"Erro: {e.pgcode} - {e.pgerror}")
             conn.rollback()

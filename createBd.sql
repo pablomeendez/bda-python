@@ -1,17 +1,17 @@
 CREATE TABLE Ubicacion (
     id INTEGER PRIMARY KEY,
-    dirección VARCHAR(50),
-    provincia VARCHAR(50),
-    códigoPostal VARCHAR(5),
-    ciudad VARCHAR(50)
+    dirección VARCHAR(50) NOT NULL,
+    provincia VARCHAR(50) NOT NULL,
+    códigoPostal VARCHAR(5) NOT NULL,
+    ciudad VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE Laboratorio (
     id INTEGER PRIMARY KEY,
-    nombre VARCHAR(50),
-    especialidad VARCHAR(50),
-    teléfono VARCHAR(9),
-    capacidad INTEGER,
+    nombre VARCHAR(50) NOT NULL,
+    especialidad VARCHAR(50) NOT NULL,
+    teléfono VARCHAR(9) NOT NULL,
+    capacidad INTEGER NOT NULL CONSTRAINT capacidad_mayor_cero CHECK (capacidad > 0),
     idUbicación INT NOT NULL REFERENCES Ubicacion(id)
 );
 
